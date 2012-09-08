@@ -3,6 +3,9 @@
 import os, sys, json
 from flask import Flask, request, render_template
 
+app = Flask(__name__)
+app.config.from_object(__name__)
+
 def read_file(source_file):
     """open file for get list of TODO in dictionary
     Arguments:
@@ -16,7 +19,7 @@ def read_file(source_file):
 app = Flask(__name__)
 app.config.from_object(__name__)
         
-@app.route('/', methods=['POST'])
+@app.route('/')
 def index():
     """view for user"""
     return render_template('index.html')   
