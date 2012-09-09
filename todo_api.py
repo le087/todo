@@ -17,8 +17,15 @@ class todoserver:
         """
         self.ADRESS = adress
         self.PORT = port
-        self.DATADIR = os.path.dirname(__file__) + '/user_data'
-        
+        self.DATADIR = os.path.abspath(os.curdir) + '/user_data'
+        self.MAINPAGE = """Выберите действие:
+[1] Просмотреть записи
+[2] Добваить запись
+[3] Удалить запись
+[4] Выход
+==========================
+"""
+
     def run(self):
         """ Метод открывает сокет и слушает его на
         указанном порту
@@ -31,10 +38,27 @@ class todoserver:
         
         while 1:
             conn, adr_user = server_sock.accept()
+            conn.send('Добро пожаловать в Тудушечку!\n')
+            conn.send('=============================\n')
+            conn.send('Выберите пользователя:\n')
+            string_list, dict_users = self.get_list_user()
+            conn.send(string_list)
+            user = dict_users[conn.recv(1024)[:1]]
+            conn.send('Вы выбрали пользователя: ' + user + '\n')
+            conn.send(self.MAINPAGE)
             while 1:
-                data = conn.recv(1024)
-                print data
+                pass
             conn.close()
+
+    def commander(self, command, conn):
+        """ обрабатывает запросы пользователя
+        
+        Arguments:
+        - `self`:
+        - `command`:
+        """
+        if command == '1':
+            pass
 
     def get_list_user(self):
         """ возвращает список пользователей
@@ -42,8 +66,15 @@ class todoserver:
         Arguments:
         - `self`:
         """
-        pass
-    
+        dict_users = {}
+        stroka = ""
+        n = 1
+        for i in os.listdir(self.DATADIR):
+            dict_users[str(n)] = i
+            stroka += "[" + str(n) + "]" + i + "\n"
+            n += 1
+        return stroka, dict_users
+            
     def get_todo(self, user):
         """возвращает список todo из словаря
         который сохранен в базе для конкретного пользователя
@@ -76,8 +107,6 @@ class todoserver:
             return True
         else:
             return False
-        
-
             
 app = todoserver()
 
