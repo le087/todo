@@ -73,7 +73,6 @@ class TodoServer:
             dict_todo = json.load(open(self.DATADIR + user, 'r'))
         except:
             dict_todo = {}
-            print "Ошибка при импорте данных пользователя"
         conn.send('=============================\n')
         dict_print = {}
         string = u''
@@ -82,10 +81,12 @@ class TodoServer:
             dict_print[iteration]=(i, p)
             string += u'[' + str(iteration).decode('utf-8') + u'] ' + p + u'\n'
             iteration += 1
+        # [1] Просмотреть записи
         if command == '1':
             conn.send(string.encode("utf-8"))
             conn.send(self.MAINPAGE)
             return True
+        # [2] Добваить запись
         elif command == '2':
             conn.send('Введите новую запись: ')
             note = conn.recv(1000000)
@@ -93,6 +94,7 @@ class TodoServer:
             json.dump(dict_todo, open(self.DATADIR + user, 'w')) 
             conn.send(self.MAINPAGE)
             return True
+        # [3] Удалить запись
         elif command == '3':
             conn.send('Введите номер записи, которую нужно удалить: ')
             note = int(conn.recv(1024)[:1])
@@ -100,6 +102,7 @@ class TodoServer:
             json.dump(dict_todo, open(self.DATADIR + user, 'w')) 
             conn.send(self.MAINPAGE)
             return True
+        # [4] Изменить запись
         elif command == '4':
             conn.send('Введите номер записи, которую нужно изменить: ')
             note = int(conn.recv(1024)[:1])
@@ -108,10 +111,12 @@ class TodoServer:
             json.dump(dict_todo, open(self.DATADIR + user, 'w')) 
             conn.send(self.MAINPAGE)
             return True
+        # [5] Очистить поврежденный файл
         elif command == '5':
             json.dump({}, open(self.DATADIR + user, 'w')) 
             conn.send(self.MAINPAGE)
             return True
+        # [6] Создать нового пользователя
         elif command == '6':
             conn.send('Введите имя нового пользователя: ')
             new_user = conn.recv(1000000).decode('utf-8')
@@ -120,6 +125,7 @@ class TodoServer:
             tempf.close()
             conn.send(self.MAINPAGE)
             return True
+        # [7] Выход
         elif command == '7':
             conn.send(self.MAINPAGE)
             return False
@@ -129,7 +135,6 @@ class TodoServer:
 
     def get_list_user(self):
         """ возвращает список пользователей
-        
         Arguments:
         - `self`:
         """
