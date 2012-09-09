@@ -47,18 +47,42 @@ class todoserver:
             conn.send('Вы выбрали пользователя: ' + user + '\n')
             conn.send(self.MAINPAGE)
             while 1:
-                pass
+                self.commander(conn.recv(1024)[:1], conn, "/" + user)
             conn.close()
 
-    def commander(self, command, conn):
+    def commander(self, command, conn, user):
         """ обрабатывает запросы пользователя
         
         Arguments:
         - `self`:
-        - `command`:
+        - `command`: команда пользователя
+        - `conn`: объект соединение
+        - `user`: пользователь, для которого надо редактировать записи
         """
+        try:
+            dict_todo = json.load(open(self.DATADIR + user, 'r'))
+        except:
+            dict_todo = {}
+            print "Ошибка при импорте данных пользователя"
+        conn.send('=============================\n')
+        dict_print = {}
+        string = u''
+        iteration = 1
+        for i, p in dict_todo.items():
+            dict_print[iteration]=(i, p)
+            string += u'[' + str(iteration).decode('utf-8') + u'] ' + p + u'\n'
+            iteration += 1
         if command == '1':
-            pass
+            conn.send(string.encode("utf-8"))
+        elif command == '2':
+            conn.send('Введите новую запись: ')
+            dict_todo[str(uuid.uuid1()).encode("utf-8")] = conn.recv(1024)[:-2]
+            json.dump(dict_todo, open(self.DATADIR + user, 'w')) 
+        elif command == '3':
+            conn.send('Введите номер записи, которую нужно удалить: ')
+            test = int(conn.recv(1024)[:1])
+            print dict_todo[dict_print[test][0]]
+        conn.send(self.MAINPAGE)
 
     def get_list_user(self):
         """ возвращает список пользователей
@@ -85,8 +109,7 @@ class todoserver:
         """
         list_user = os.listdir(self.DATADIR)
         if user in list_user:
-            data = json.load(open(self.DATADIR + user, 'r'))
-            return [(k, v) for k, v in data.items()]
+            return 
         else:
             return False
 
