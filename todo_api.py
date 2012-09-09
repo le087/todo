@@ -6,7 +6,7 @@ import uuid
 import json
 import socket
 
-class todoserver:
+class TodoServer:
     """создает сервер, который слушает по протоколу 
     подобному телнету пор и предоставляет информацию
     по спискам заданий для того или иного пользователя
@@ -17,12 +17,15 @@ class todoserver:
         """
         self.ADRESS = adress
         self.PORT = port
-        self.DATADIR = os.path.abspath(os.curdir) + '/user_data'
+        self.DATADIR = os.path.abspath(os.curdir) + '/user_data/'
         self.MAINPAGE = """Выберите действие:
 [1] Просмотреть записи
 [2] Добваить запись
 [3] Удалить запись
-[4] Выход
+[4] Изменить запись
+[5] Очистить поврежденный файл
+[6] Создать нового пользователя
+[7] Выход
 ==========================
 """
 
@@ -42,12 +45,19 @@ class todoserver:
             conn.send('=============================\n')
             conn.send('Выберите пользователя:\n')
             string_list, dict_users = self.get_list_user()
+            if dict_users == {}:
+                tempf = open(self.DATADIR + 'temp_user', 'w')
+                tempf.write('{}')
+                tempf.close()
+                string_list, dict_users = self.get_list_user()
             conn.send(string_list)
             user = dict_users[conn.recv(1024)[:1]]
             conn.send('Вы выбрали пользователя: ' + user + '\n')
+            conn.send('=============================\n')
             conn.send(self.MAINPAGE)
-            while 1:
-                self.commander(conn.recv(1024)[:1], conn, "/" + user)
+            p = True
+            while p:
+                p = self.commander(conn.recv(1024)[:1], conn, user)
             conn.close()
 
     def commander(self, command, conn, user):
@@ -74,15 +84,48 @@ class todoserver:
             iteration += 1
         if command == '1':
             conn.send(string.encode("utf-8"))
+            conn.send(self.MAINPAGE)
+            return True
         elif command == '2':
             conn.send('Введите новую запись: ')
-            dict_todo[str(uuid.uuid1()).encode("utf-8")] = conn.recv(1024)[:-2]
+            note = conn.recv(1000000)
+            dict_todo[str(uuid.uuid1()).encode("utf-8")] = note[:-2]
             json.dump(dict_todo, open(self.DATADIR + user, 'w')) 
+            conn.send(self.MAINPAGE)
+            return True
         elif command == '3':
             conn.send('Введите номер записи, которую нужно удалить: ')
-            test = int(conn.recv(1024)[:1])
-            print dict_todo[dict_print[test][0]]
-        conn.send(self.MAINPAGE)
+            note = int(conn.recv(1024)[:1])
+            del dict_todo[dict_print[note][0]]
+            json.dump(dict_todo, open(self.DATADIR + user, 'w')) 
+            conn.send(self.MAINPAGE)
+            return True
+        elif command == '4':
+            conn.send('Введите номер записи, которую нужно изменить: ')
+            note = int(conn.recv(1024)[:1])
+            conn.send('Введите новое значение записи: ')
+            dict_todo[dict_print[note][0]] = conn.recv(1024)[:-2]
+            json.dump(dict_todo, open(self.DATADIR + user, 'w')) 
+            conn.send(self.MAINPAGE)
+            return True
+        elif command == '5':
+            json.dump({}, open(self.DATADIR + user, 'w')) 
+            conn.send(self.MAINPAGE)
+            return True
+        elif command == '6':
+            conn.send('Введите имя нового пользователя: ')
+            new_user = conn.recv(1000000).decode('utf-8')
+            tempf = open(self.DATADIR + new_user[:-2], 'w')
+            tempf.write('{}')
+            tempf.close()
+            conn.send(self.MAINPAGE)
+            return True
+        elif command == '7':
+            conn.send(self.MAINPAGE)
+            return False
+        else:
+            conn.send(self.MAINPAGE)
+            return True
 
     def get_list_user(self):
         """ возвращает список пользователей
@@ -99,39 +142,7 @@ class todoserver:
             n += 1
         return stroka, dict_users
             
-    def get_todo(self, user):
-        """возвращает список todo из словаря
-        который сохранен в базе для конкретного пользователя
-        
-        Arguments:
-        - `self`:
-        - `user`: пользователь, для которого необходим вывести инфу
-        """
-        list_user = os.listdir(self.DATADIR)
-        if user in list_user:
-            return 
-        else:
-            return False
-
-    def write_todo(self, user, todo):
-        """записывает новую запись в базу данных
-        пользователя
-        
-        Arguments:
-        - `self`:
-        - `user`: пользоветель
-        - `todo`: новая запись
-        """
-        data = json.load(open(self.DATADIR + user, 'r'))
-        data[str(uuid.uuid1())] = todo
-        list_user = os.listdir(self.DATADIR)
-        if user in list_user:
-            json.dump(data, open(self.DATADIR + user, 'wb'))
-            return True
-        else:
-            return False
-            
-app = todoserver()
+app = TodoServer()
 
 if __name__ == '__main__':
     app.run()
